@@ -17,6 +17,15 @@ NODE_GYP=node-gyp@12.4.0
 
 log() { echo "==> $*"; }
 
+# Stops the build unless a download matches its published hash: check_hash <file> <expected> <actual>.
+check_hash() {
+  if [ -z "$2" ] || [ "$2" != "$3" ]; then
+    echo "Checksum mismatch for $1 (expected '${2:-none published}', got '$3'), stopping." >&2
+    exit 1
+  fi
+  log "Checksum OK: $1"
+}
+
 # Sets VERSION: the argument, or the latest release tag (read from GitHub's redirect).
 detect_version() {
   VERSION=${1:-$(curl -fsSo /dev/null -w '%{redirect_url}' "https://github.com/$REPO/releases/latest")}
@@ -47,7 +56,16 @@ prepare_dirs() {
 fetch_mac_app() {
   log "Promethee $VERSION (linux-$ARCH)"
   # ponytail: the mac arch doesn't matter, we only keep the JS and the native module sources
-  curl -fL# -o mac.zip "https://github.com/$REPO/releases/download/v$VERSION/Promethee-$VERSION-arm64.zip"
+  local base=https://github.com/$REPO/releases/download/v$VERSION zip=Promethee-$VERSION-arm64.zip
+  curl -fL# -o mac.zip "$base/$zip"
+  # electron-builder's update manifest lists the zip's sha512 (base64), hashed here with node
+  # since it's already required. Same release as the zip: catches corrupt or truncated
+  # downloads and tampering in transit, not a compromised release.
+  curl -fsSL -o mac.yml "$base/darwin-arm64-mac.yml"
+  check_hash "$zip" \
+    "$(grep -A1 -F "url: $zip" mac.yml | sed -n 's/^ *sha512: *//p')" \
+    "$(node -e 'const h=require("crypto").createHash("sha512");
+      require("fs").createReadStream(process.argv[1]).on("data",d=>h.update(d)).on("end",()=>process.stdout.write(h.digest("base64")))' mac.zip)"
   unzip -q mac.zip "$RES/app.asar" "$RES/app.asar.unpacked/*" "$RES/assets/*" "$ELECTRON_PLIST"
 
   ELECTRON=$(grep -A1 CFBundleVersion "$ELECTRON_PLIST" | sed -n 's:.*<string>\(.*\)</string>.*:\1:p')
@@ -73,7 +91,12 @@ patch_natives() {
 # Downloads the official Linux Electron of the same version into OUT.
 fetch_electron() {
   log "Downloading Electron $ELECTRON"
-  curl -fL# -o electron.zip "https://github.com/electron/electron/releases/download/v$ELECTRON/electron-v$ELECTRON-linux-$ARCH.zip"
+  local base=https://github.com/electron/electron/releases/download/v$ELECTRON zip=electron-v$ELECTRON-linux-$ARCH.zip
+  curl -fL# -o electron.zip "$base/$zip"
+  curl -fsSL -o SHASUMS256.txt "$base/SHASUMS256.txt"   # lines: "<sha256> *<file>"
+  check_hash "$zip" \
+    "$(awk -v f="*$zip" '$2 == f { print $1 }' SHASUMS256.txt)" \
+    "$(sha256sum electron.zip | cut -d' ' -f1)"
   unzip -q electron.zip -d "$OUT"
 }
 
