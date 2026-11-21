@@ -1,0 +1,25 @@
+# Builds, installs, starts and removes the AUR package in a clean Arch container.
+# On main, check-release.yml calls it (new release or code change), before publishing to the AUR.
+name: AUR package
+
+on:
+  pull_request:
+    paths: [build.sh, promethee, packaging/aur/**, .github/workflows/aur.yml]
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest   # x86_64 only: Arch has no official arm64 image
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build, install, start and remove the package
+        env:
+          VERSION: ${{ inputs.version }}
+        run: docker run --rm --shm-size=1g -v "$PWD:/repo:ro" archlinux:latest bash /repo/packaging/aur/test.sh ${VERSION:+"$VERSION"}

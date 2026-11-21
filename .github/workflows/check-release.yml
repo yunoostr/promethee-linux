@@ -13,7 +13,7 @@ on:
         required: false
   push:
     branches: [main]
-    paths: [build.sh, promethee, Dockerfile, .github/workflows/check-release.yml]
+    paths: [build.sh, promethee, Dockerfile, packaging/aur/**, .github/workflows/check-release.yml, .github/workflows/aur.yml]
 
 permissions:
   contents: write
@@ -69,6 +69,29 @@ jobs:
         run: docker build --build-arg VERSION="$VERSION" -t promethee-linux .
       - name: Smoke test
         run: docker run --rm --shm-size=1g promethee-linux
+
+  aur:
+    needs: check
+    if: needs.check.outputs.run == 'true'
+    uses: ./.github/workflows/aur.yml
+    with:
+      version: ${{ needs.check.outputs.version }}
+
+  aur-publish:
+    needs: [check, test, aur]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # publish.sh diffs against the commit the AUR package was built from
+      - name: Publish to the AUR
+        env:
+          AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          AUR_GIT_NAME: ${{ vars.AUR_GIT_NAME }}
+          AUR_GIT_EMAIL: ${{ vars.AUR_GIT_EMAIL }}
+          VERSION: ${{ needs.check.outputs.version }}
+        run: packaging/aur/publish.sh "$VERSION" "$GITHUB_SHA"
 
   report:
     needs: [check, test]
