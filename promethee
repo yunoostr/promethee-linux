@@ -46,21 +46,30 @@ update() {
 }
 
 # Chromium's sandbox uses unprivileged user namespaces. Where the system blocks them
-# (Ubuntu 23.10+ via AppArmor, some hardened kernels) it needs its setuid helper,
-# which only root can set up, so we ask once per build.
+# (Ubuntu 23.10+ via AppArmor, hardened kernels, user.max_user_namespaces=0, containers)
+# it needs its setuid helper, which only root can set up, so we ask once per build.
 ensure_sandbox() {
   case " $* " in *" --no-sandbox "*) return 0 ;; esac   # sandbox turned off: nothing to set up
+  if [ "$(id -u)" = 0 ]; then
+    echo "Chromium won't start as root with its sandbox: run ./promethee as your usual user." >&2
+    exit 1
+  fi
   local helper
   helper=$(readlink -f "$CURRENT")/chrome-sandbox
+  # AppArmor's restriction still lets unshare succeed (the namespace just gets no rights), hence
+  # the sysctl; the probe catches everything else that blocks namespaces.
   [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" = 1 ] \
     || [ "$(cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null)" = 0 ] \
+    || { command -v unshare >/dev/null && ! unshare -Ur true 2>/dev/null; } \
     || return 0
   [ "$(stat -c %u:%a "$helper")" = 0:4755 ] && return 0
 
   echo "Promethee needs admin rights once to set up Chromium's sandbox."
   local fix='chown root:root "$1" && chmod 4755 "$1"'
-  if command -v pkexec >/dev/null; then pkexec /bin/sh -c "$fix" sh "$helper"
-  else sudo /bin/sh -c "$fix" sh "$helper"; fi
+  if command -v pkexec >/dev/null && pkexec /bin/sh -c "$fix" sh "$helper"; then return 0; fi
+  if command -v sudo >/dev/null && sudo /bin/sh -c "$fix" sh "$helper"; then return 0; fi
+  echo "Couldn't set up the sandbox. To start without it (less safe): ./promethee --no-sandbox" >&2
+  exit 1
 }
 
 APPS=${XDG_DATA_HOME:-$HOME/.local/share}/applications
