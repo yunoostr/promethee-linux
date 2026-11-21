@@ -63,7 +63,45 @@ ensure_sandbox() {
   else sudo /bin/sh -c "$fix" sh "$helper"; fi
 }
 
+APPS=${XDG_DATA_HOME:-$HOME/.local/share}/applications
+ICONS=${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor
+ICON_SIZES="16 32 128 256 512"
+
+# Lists Promethee in app launchers and lets promethee:// links open it. Rewritten when it changes
+# (a moved repo fixes its Exec path); skipped when a package (AUR) already ships the entry.
+install_desktop() {
+  [ "${PROMETHEE_NO_DESKTOP:-}" = 1 ] && return 0
+  [ -e /usr/share/applications/promethee.desktop ] && return 0
+  [[ $ROOT == *[\"\`\$\\]* ]] && return 0   # can't be quoted in Exec= without desktop-file escaping
+  local size src dst entry
+  for size in $ICON_SIZES; do
+    src=$CURRENT/resources/assets/icon.iconset/icon_${size}x${size}.png
+    dst=$ICONS/${size}x${size}/apps/promethee.png
+    if [ -f "$src" ] && ! cmp -s "$src" "$dst"; then mkdir -p "${dst%/*}" && cp "$src" "$dst"; fi
+  done
+  entry="[Desktop Entry]
+Type=Application
+Name=Promethee
+Exec=\"$ROOT/promethee\" %U
+Icon=promethee
+Categories=Office;
+StartupWMClass=promethee
+MimeType=x-scheme-handler/promethee;"
+  [ "$entry" = "$(cat "$APPS/promethee.desktop" 2>/dev/null)" ] && return 0
+  mkdir -p "$APPS" && printf '%s\n' "$entry" > "$APPS/promethee.desktop"
+  if command -v update-desktop-database >/dev/null; then update-desktop-database -q "$APPS"; fi
+}
+
+uninstall_desktop() {
+  local size
+  rm -f "$APPS/promethee.desktop"
+  for size in $ICON_SIZES; do rm -f "$ICONS/${size}x${size}/apps/promethee.png"; done
+  if command -v update-desktop-database >/dev/null; then update-desktop-database -q "$APPS"; fi
+  echo "Promethee removed from app launchers. Set PROMETHEE_NO_DESKTOP=1 to keep it out."
+}
+
 main() {
+  if [ "${1:-}" = --uninstall-desktop ]; then uninstall_desktop; return; fi
   if [ ! -e "$CURRENT" ]; then
     # Same lock as update(): a second launch waits for the first build instead of starting another.
     mkdir -p "$ROOT/build"
@@ -79,6 +117,7 @@ main() {
     ( trap '' HUP; update ) </dev/null >/dev/null 2>&1 &
   fi
   ensure_sandbox "$@"
+  install_desktop 2>/dev/null || true   # a launcher entry is a nicety: never block the app over it
 
   # Chromium only uses the system keyring on desktops it recognizes (GNOME...). Elsewhere (sway,
   # i3, Hyprland) it falls back to no encryption, and Promethee then can't keep you signed in.

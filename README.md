@@ -90,6 +90,9 @@ That's it. The first run builds the app (a few minutes), every later run starts 
 builds it next to the current one and tells you when it's ready. The new version opens on your next launch,
 and the previous one is kept in case you need to go back.
 
+**It shows up in your app launcher.** `./promethee` adds Promethee to your launcher (and lets `promethee://` links open it).
+Remove it with `./promethee --uninstall-desktop`, or set `PROMETHEE_NO_DESKTOP=1` to never add it.
+
 <sub>Needs <code>curl</code>, <code>unzip</code>, <code>node</code>, <code>python3</code>, <code>make</code> and <code>g++</code> 14+ (Electron 43's headers need a recent compiler). On Ubuntu 23.10+, Chromium's sandbox needs admin rights once per version: <code>./promethee</code> asks for your password when that's the case.</sub>
 
 <sub>Promethee keeps you signed in through your desktop keyring. GNOME and KDE have one out of the box; on sway, i3 or Hyprland, run <code>gnome-keyring</code> (or KeePassXC's Secret Service) and <code>./promethee</code> takes care of the rest. Without a keyring you'll have to sign in again at each launch.</sub>
@@ -151,7 +154,8 @@ docker run --rm --shm-size=1g promethee-linux
 The most useful thing you can do right now is **try it on your distro** and [open an issue](../../issues)
 with your distro, desktop (X11 or Wayland) and what worked. Ideas welcome on the roadmap:
 
-- [ ] AppImage and a `.desktop` entry
+- [x] A `.desktop` entry, added by `./promethee`
+- [ ] AppImage
 - [ ] AUR package
 - [ ] Wayland window detection
 - [x] A daily check that builds and tests every new Promethee release on x64 and arm64 (nothing is published)
