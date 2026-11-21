@@ -3,7 +3,7 @@
 # Usage: docker run --rm --shm-size=1g -v "$PWD:/repo:ro" archlinux:latest bash /repo/packaging/aur/test.sh [version]
 set -euo pipefail
 
-pacman -Syu --noconfirm --needed base-devel git namcap xorg-server-xvfb xorg-xauth >/dev/null
+pacman -Syu --noconfirm --needed base-devel git namcap pacman-contrib unzip xorg-server-xvfb xorg-xauth >/dev/null
 useradd -m builder
 # makepkg clones a commit: copy the checkout and commit it, so uncommitted edits get tested too.
 cp -a /repo /src && chown -R builder /src
@@ -11,8 +11,8 @@ su builder -c 'cd /src && git -c user.name=test -c user.email=test@localhost com
 commit=$(su builder -c 'git -C /src rev-parse HEAD')
 
 mkdir /pkg && cp /src/packaging/aur/PKGBUILD /pkg/ && chown -R builder /pkg
-sed -i -e "s|^source=.*|source=(\"promethee-linux::git+file:///src#commit=$commit\")|" /pkg/PKGBUILD
-[ -z "${1:-}" ] || sed -i "s/^pkgver=.*/pkgver=$1/" /pkg/PKGBUILD
+sed -i "s|git+\$url.git#commit=\$_commit|git+file:///src#commit=$commit|" /pkg/PKGBUILD
+su builder -c "/src/packaging/aur/bump.sh /pkg ${1:-}"
 
 # shellcheck source=/dev/null disable=SC2154
 (source /pkg/PKGBUILD && pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}" >/dev/null)

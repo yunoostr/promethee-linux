@@ -3,22 +3,36 @@ pkgname=promethee
 pkgver=1.4.2
 pkgrel=1
 _commit=870a580   # the promethee-linux commit to build; publish.sh sets it
-pkgdesc='Promethee for Linux, built locally from the official release'
+_electron=43.8.3  # the Electron inside this Promethee release; bump.sh sets it
+pkgdesc='Focus session tracker, built locally from the official macOS release'
 arch=(x86_64 aarch64)
 url='https://github.com/yunoostr/promethee-linux'
 license=(MIT LicenseRef-Promethee)
 depends=(gtk3 nss alsa-lib libsecret)
-makedepends=(git curl unzip nodejs npm python make gcc)
+makedepends=(git unzip nodejs asar node-gyp python make gcc)
 optdepends=('gnome-keyring: stay signed in outside GNOME and KDE'
             'xorg-xprop: window tracking on X11'
             'xorg-xwininfo: window tracking on X11')
 options=(!strip !debug)
-source=("promethee-linux::git+$url.git#commit=$_commit")
-sha256sums=(SKIP)
+_releases=https://github.com/promethee-io/Promethee-releases/releases/download/v$pkgver
+_electron_dl=https://github.com/electron/electron/releases/download/v$_electron
+source=("promethee-linux::git+$url.git#commit=$_commit"
+        "$_releases/Promethee-$pkgver-arm64.zip"
+        "https://electronjs.org/headers/v$_electron/node-v$_electron-headers.tar.gz")
+source_x86_64=("$_electron_dl/electron-v$_electron-linux-x64.zip")
+source_aarch64=("$_electron_dl/electron-v$_electron-linux-arm64.zip")
+noextract=("Promethee-$pkgver-arm64.zip"
+           "electron-v$_electron-linux-x64.zip"
+           "electron-v$_electron-linux-arm64.zip")
+sha256sums=('SKIP'
+            '3c3a7c5bface8fb9cb61de3aec80dcb33b9e9a41304d30acd9ea5587f142ab04'
+            'd23630d0b98161bec7860dcc482187aca380b1e0da264c1ed5efb42bce79d604')
+sha256sums_x86_64=('73d7d6fe120c998db75834c23c8ce7ce8390607c198b2e167a28acd7937bef22')
+sha256sums_aarch64=('b814ab22abf0bce90fd2fffc1490efc94f388353bcdb2f744950744998fd97b1')
 
 build() {
   cd promethee-linux
-  ./build.sh "$pkgver"
+  PROMETHEE_SOURCES="$srcdir" ./build.sh "$pkgver"
 }
 
 package() {

@@ -28,11 +28,12 @@ if [ "$(field pkgver)" = "$version" ]; then
   pkgrel=$(( $(field pkgrel) + 1 ))
 fi
 
-sed -e "s/^pkgver=.*/pkgver=$version/" -e "s/^pkgrel=.*/pkgrel=$pkgrel/" -e "s/^_commit=[^ ]*/_commit=$commit/" \
-  "$here/PKGBUILD" > "$aur/PKGBUILD"
-docker run --rm -i archlinux:latest bash -c \
-  'useradd -m builder && cd /home/builder && cat > PKGBUILD && su builder -c "makepkg --printsrcinfo"' \
-  < "$aur/PKGBUILD" > "$aur/.SRCINFO"
+sed -e "s/^pkgrel=.*/pkgrel=$pkgrel/" -e "s/^_commit=[^ ]*/_commit=$commit/" "$here/PKGBUILD" |
+  docker run --rm -i -v "$here:/aur:ro" archlinux:latest bash -c "
+    pacman -Syu --noconfirm --needed base-devel git pacman-contrib unzip >/dev/null && useradd -m builder &&
+    cd /home/builder && cat > PKGBUILD && chown builder PKGBUILD &&
+    su builder -c '/aur/bump.sh . $version >&2 && makepkg --printsrcinfo > .SRCINFO' &&
+    tar c PKGBUILD .SRCINFO" | tar x -C "$aur"
 
 cp "$here/LICENSE" "$aur/LICENSE"   # the AUR asks for a license on the PKGBUILD itself (0BSD)
 git -C "$aur" add PKGBUILD .SRCINFO LICENSE

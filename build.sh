@@ -14,8 +14,22 @@ ELECTRON_PLIST='Promethee.app/Contents/Frameworks/Electron Framework.framework/V
 # support this Node (node-gyp 13 needs Node 22.22+). Both of these run on Node 20.17+ and 22.
 ASAR=@electron/asar@3.4.1
 NODE_GYP=node-gyp@12.4.0
+# A package build (AUR) sets PROMETHEE_SOURCES to a folder of checksummed downloads (macOS zip,
+# Electron zip, Electron headers) and provides asar and node-gyp: then nothing is fetched here.
+SOURCES=${PROMETHEE_SOURCES:-}
+if [ -n "$SOURCES" ]; then
+  ASAR_CMD=(asar) GYP_CMD=(node-gyp --nodedir="$SOURCES/node_headers")
+else
+  ASAR_CMD=(npx -y "$ASAR") GYP_CMD=(npx -y "$NODE_GYP" --dist-url=https://electronjs.org/headers)
+fi
 
 log() { echo "==> $*"; }
+
+download() {  # <file> <url>
+  if [ -z "$SOURCES" ]; then curl -fL# -o "$1" "$2"; return; fi
+  [ -e "$SOURCES/$1" ] || { echo "Missing $1 in $SOURCES" >&2; exit 1; }
+  ln -s "$SOURCES/$1" "$1"
+}
 
 # Sets VERSION: the argument, or the latest release tag (read from GitHub's redirect).
 detect_version() {
@@ -47,14 +61,15 @@ prepare_dirs() {
 fetch_mac_app() {
   log "Promethee $VERSION (linux-$ARCH)"
   # ponytail: the mac arch doesn't matter, we only keep the JS and the native module sources
-  curl -fL# -o mac.zip "https://github.com/$REPO/releases/download/v$VERSION/Promethee-$VERSION-arm64.zip"
-  unzip -q mac.zip "$RES/app.asar" "$RES/app.asar.unpacked/*" "$RES/assets/*" "$ELECTRON_PLIST"
+  local zip=Promethee-$VERSION-arm64.zip
+  download "$zip" "https://github.com/$REPO/releases/download/v$VERSION/$zip"
+  unzip -q "$zip" "$RES/app.asar" "$RES/app.asar.unpacked/*" "$RES/assets/*" "$ELECTRON_PLIST"
 
   ELECTRON=$(grep -A1 CFBundleVersion "$ELECTRON_PLIST" | sed -n 's:.*<string>\(.*\)</string>.*:\1:p')
   log "Electron $ELECTRON"
 
   log "Extracting app.asar"
-  npx -y "$ASAR" extract "$RES/app.asar" app
+  "${ASAR_CMD[@]}" extract "$RES/app.asar" app
 }
 
 # Drops macOS-only modules and recompiles SQLite for Linux.
@@ -65,16 +80,17 @@ patch_natives() {
 
   local sqlite=app/node_modules/better-sqlite3-multiple-ciphers
   rm -rf "${sqlite:?}/bin" "${sqlite:?}/build"
-  (cd "$sqlite" && npx -y "$NODE_GYP" rebuild --release \
-    --runtime=electron --target="$ELECTRON" --arch="$ARCH" --dist-url=https://electronjs.org/headers)
+  (cd "$sqlite" && "${GYP_CMD[@]}" rebuild --release \
+    --runtime=electron --target="$ELECTRON" --arch="$ARCH")
   rm -rf "$sqlite/build/Release/obj" "$sqlite/build/Release/obj.target" "$sqlite/build/Release/.deps"
 }
 
 # Downloads the official Linux Electron of the same version into OUT.
 fetch_electron() {
   log "Downloading Electron $ELECTRON"
-  curl -fL# -o electron.zip "https://github.com/electron/electron/releases/download/v$ELECTRON/electron-v$ELECTRON-linux-$ARCH.zip"
-  unzip -q electron.zip -d "$OUT"
+  local zip=electron-v$ELECTRON-linux-$ARCH.zip
+  download "$zip" "https://github.com/electron/electron/releases/download/v$ELECTRON/$zip"
+  unzip -q "$zip" -d "$OUT"
 }
 
 # Puts the patched app inside Electron and writes the launcher.
