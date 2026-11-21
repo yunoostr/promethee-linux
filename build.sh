@@ -3,7 +3,7 @@
 # Nothing from Promethee is redistributed: the official build is downloaded and patched locally.
 #
 # Usage: ./build.sh [version]   (default: latest release)
-# Needs: curl, unzip, node/npx, python3, make, g++ (14+)
+# Needs: curl, unzip, node/npx, python3, make, g++ (13+)
 set -euo pipefail
 
 REPO=promethee-io/Promethee-releases
@@ -40,9 +40,33 @@ download() {  # <file> <url>
   ln -s "$SOURCES/$1" "$1"
 }
 
+# Stops before any download when a tool is missing or g++ is too old: otherwise the build
+# fails minutes in, after ~450 MB of downloads, with a node-gyp or C++ error.
+check_tools() {
+  local cxx=${CXX:-g++} tool missing=()
+  local tools=(unzip node python3 make "$cxx")
+  if [ -n "$SOURCES" ]; then tools+=(asar node-gyp); else tools+=(curl npx); fi
+  for tool in "${tools[@]}"; do command -v "$tool" >/dev/null || missing+=("$tool"); done
+  if [ ${#missing[@]} -gt 0 ]; then
+    echo "Missing: ${missing[*]}. Install them first, see the README's Quick start." >&2
+    exit 1
+  fi
+  # Electron 43's V8 headers don't parse with g++ 12 (Debian 12); g++ 13 (Ubuntu 24.04) works.
+  local version
+  version=$("$cxx" -dumpversion)
+  if [ "${version%%.*}" -lt 13 ]; then
+    echo "$cxx $version is too old: Electron's headers need g++ 13 or newer." >&2
+    exit 1
+  fi
+}
+
 # Sets VERSION: the argument, or the latest release tag (read from GitHub's redirect).
 detect_version() {
-  VERSION=${1:-$(curl -fsSo /dev/null -w '%{redirect_url}' "https://github.com/$REPO/releases/latest")}
+  VERSION=${1:-}
+  if [ -z "$VERSION" ]; then
+    VERSION=$(curl -fsSo /dev/null -w '%{redirect_url}' --max-time 20 "https://github.com/$REPO/releases/latest") \
+      || { echo "Can't reach GitHub to find the latest Promethee release: check your connection." >&2; exit 1; }
+  fi
   VERSION=${VERSION##*/v}
   # It ends up in paths that get rm -rf'd: refuse anything but a plain version (same check as CI).
   [[ $VERSION =~ ^[0-9]+(\.[0-9]+)*$ ]] || { echo "Unexpected Promethee version: '$VERSION'" >&2; exit 1; }
@@ -155,6 +179,7 @@ activate() {
 }
 
 main() {
+  check_tools
   detect_version "$@"
   detect_arch
   prepare_dirs
