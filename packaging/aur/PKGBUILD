@@ -9,7 +9,7 @@ arch=(x86_64 aarch64)
 url='https://github.com/yunoostr/promethee-linux'
 license=(MIT LicenseRef-Promethee)
 depends=(gtk3 nss alsa-lib libsecret)
-makedepends=(git unzip nodejs asar node-gyp python make gcc)
+makedepends=(git unzip 'nodejs>=22.12' asar node-gyp python make gcc)
 optdepends=('gnome-keyring: stay signed in outside GNOME and KDE'
             'xorg-xprop: window tracking on X11'
             'xorg-xwininfo: window tracking on X11')
