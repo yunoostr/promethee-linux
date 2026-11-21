@@ -123,7 +123,7 @@ jobs:
 
           Logs: $RUN_URL
 
-          Users who run \`./promethee\` keep their current version: a failed update is not retried and does not replace it."
+          Users who run \`./promethee\` keep their current version: a failed update doesn't replace it, and is retried a day later."
       - name: Close the issue once it works again
         if: needs.test.result == 'success'
         run: |

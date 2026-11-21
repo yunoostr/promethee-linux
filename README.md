@@ -36,13 +36,13 @@
 <p align="center"><strong>Built for your distro:</strong></p>
 <p align="center">
   <img alt="Debian" title="Debian 13 (tested)" src="https://cdn.simpleicons.org/debian" width="40">
-  <img alt="Ubuntu" title="Ubuntu 24.10+" src="https://cdn.simpleicons.org/ubuntu" width="40">
+  <img alt="Ubuntu" title="Ubuntu 24.04+" src="https://cdn.simpleicons.org/ubuntu" width="40">
   <img alt="Fedora" title="Fedora" src="https://cdn.simpleicons.org/fedora" width="40">
   <img alt="Arch Linux" title="Arch Linux" src="https://cdn.simpleicons.org/archlinux" width="40">
-  <img alt="Linux Mint" title="Linux Mint" src="https://cdn.simpleicons.org/linuxmint" width="40">
+  <img alt="Linux Mint" title="Linux Mint 22+" src="https://cdn.simpleicons.org/linuxmint" width="40">
   <img alt="openSUSE" title="openSUSE Tumbleweed" src="https://cdn.simpleicons.org/opensuse" width="40">
 </p>
-<p align="center"><sub>tested on Debian 13 - any distro with gcc 14 or newer should work - <a href="../../issues">tell us how it goes</a></sub></p>
+<p align="center"><sub>built and started on Debian 13, Ubuntu 24.04 and 26.04, Fedora, openSUSE Tumbleweed and Arch - any distro with gcc 13 or newer should work - <a href="../../issues">tell us how it goes</a></sub></p>
 
 <br />
 
@@ -79,7 +79,10 @@ and Linux users have been left at the door. Not anymore.
 ## ⚡ Quick start
 
 ```bash
-# Debian / Ubuntu: sudo apt install curl unzip nodejs npm python3 make g++
+# Debian / Ubuntu / Mint: sudo apt install git curl unzip nodejs npm python3 make g++
+# Fedora:                sudo dnf install git curl unzip nodejs npm python3 make gcc-c++
+# Arch:                  sudo pacman -S --needed git curl unzip nodejs npm python make gcc
+# openSUSE:              sudo zypper install git curl unzip nodejs npm python3 make gcc-c++
 git clone https://github.com/yunoostr/promethee-linux && cd promethee-linux
 ./promethee
 ```
@@ -93,7 +96,7 @@ and the previous one is kept in case you need to go back.
 **It shows up in your app launcher.** `./promethee` adds Promethee to your launcher (and lets `promethee://` links open it).
 Remove it with `./promethee --uninstall-desktop`, or set `PROMETHEE_NO_DESKTOP=1` to never add it.
 
-<sub>Needs <code>curl</code>, <code>unzip</code>, <code>node</code>, <code>python3</code>, <code>make</code> and <code>g++</code> 14+ (Electron 43's headers need a recent compiler). On Ubuntu 23.10+, Chromium's sandbox needs admin rights once per version: <code>./promethee</code> asks for your password when that's the case.</sub>
+<sub>Needs <code>curl</code>, <code>unzip</code>, <code>node</code>, <code>python3</code>, <code>make</code> and <code>g++</code> 13+ (Electron 43's headers need a recent compiler: Debian 12's g++ 12 is too old). On Ubuntu 23.10+, Chromium's sandbox needs admin rights once per version: <code>./promethee</code> asks for your password when that's the case.</sub>
 
 <sub>Promethee keeps you signed in through your desktop keyring. GNOME and KDE have one out of the box; on sway, i3 or Hyprland, run <code>gnome-keyring</code> (or KeePassXC's Secret Service) and <code>./promethee</code> takes care of the rest. Without a keyring you'll have to sign in again at each launch.</sub>
 
