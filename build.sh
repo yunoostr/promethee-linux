@@ -82,7 +82,10 @@ patch_natives() {
   rm -rf "${sqlite:?}/bin" "${sqlite:?}/build"
   (cd "$sqlite" && "${GYP_CMD[@]}" rebuild --release \
     --runtime=electron --target="$ELECTRON" --arch="$ARCH")
-  rm -rf "$sqlite/build/Release/obj" "$sqlite/build/Release/obj.target" "$sqlite/build/Release/.deps"
+  # Keep only the addon: the rest of build/ (Makefiles, config.gypi, sqlite3.a) embeds build paths.
+  mv "$sqlite/build/Release/better_sqlite3.node" "$WORK/"
+  rm -rf "${sqlite:?}/build" && mkdir -p "$sqlite/build/Release"
+  mv "$WORK/better_sqlite3.node" "$sqlite/build/Release/"
 }
 
 # Downloads the official Linux Electron of the same version into OUT.

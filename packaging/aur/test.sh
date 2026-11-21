@@ -17,6 +17,7 @@ su builder -c "/src/packaging/aur/bump.sh /pkg ${1:-}"
 # shellcheck source=/dev/null disable=SC2154
 (source /pkg/PKGBUILD && pacman -S --noconfirm --needed "${depends[@]}" "${makedepends[@]}" >/dev/null)
 su builder -c 'cd /pkg && makepkg --noconfirm' >/pkg/makepkg.log 2>&1 || { tail -30 /pkg/makepkg.log; exit 1; }
+! grep -A8 'reference to \$srcdir' /pkg/makepkg.log || { echo "FAIL: the package embeds build paths"; exit 1; }
 pacman -U --noconfirm /pkg/*.pkg.tar.zst >/dev/null
 
 # active-win ships a macOS binary that namcap mistakes for Java classes.
