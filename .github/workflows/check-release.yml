@@ -88,6 +88,8 @@ jobs:
       - name: Publish to the AUR
         env:
           AUR_SSH_KEY: ${{ secrets.AUR_SSH_KEY }}
+          AUR_GIT_NAME: ${{ vars.AUR_GIT_NAME }}
+          AUR_GIT_EMAIL: ${{ vars.AUR_GIT_EMAIL }}
           VERSION: ${{ needs.check.outputs.version }}
         run: packaging/aur/publish.sh "$VERSION" "$GITHUB_SHA"
 

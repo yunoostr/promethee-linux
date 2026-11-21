@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # Pushes PKGBUILD + .SRCINFO to the AUR for a tested Promethee version and promethee-linux commit.
-# Usage: AUR_SSH_KEY=<private key> packaging/aur/publish.sh <version> <commit>   (needs docker, full git history)
+# Usage: AUR_SSH_KEY=<private key> AUR_GIT_NAME=<maintainer> AUR_GIT_EMAIL=<email> packaging/aur/publish.sh <version> <commit>   (needs docker, full git history)
 # AUR_REMOTE overrides the AUR git URL (tests push to a local bare repo).
 set -euo pipefail
 version=$1 commit=$2
 here=$(cd "$(dirname "$0")" && pwd)
 repo=$(git -C "$here" rev-parse --show-toplevel)
 [ -n "${AUR_SSH_KEY:-}" ] || { echo "::notice::AUR_SSH_KEY is not set: nothing published to the AUR"; exit 0; }
+grep -q "^# Maintainer: " "$here/PKGBUILD" || { echo "::error::PKGBUILD needs a '# Maintainer:' line before it can go on the AUR"; exit 1; }
+: "${AUR_GIT_NAME:?the AUR commit author (the maintainer)}" "${AUR_GIT_EMAIL:?the AUR commit email}"
 
 ssh_dir=$(mktemp -d) aur=$(mktemp -d)
 trap 'rm -rf "$ssh_dir" "$aur"' EXIT
@@ -32,8 +34,8 @@ docker run --rm -i archlinux:latest bash -c \
   'useradd -m builder && cd /home/builder && cat > PKGBUILD && su builder -c "makepkg --printsrcinfo"' \
   < "$aur/PKGBUILD" > "$aur/.SRCINFO"
 
-git -C "$aur" add PKGBUILD .SRCINFO
-git -C "$aur" -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-  commit -qm "Update to $version-$pkgrel"
+cp "$here/LICENSE" "$aur/LICENSE"   # the AUR asks for a license on the PKGBUILD itself (0BSD)
+git -C "$aur" add PKGBUILD .SRCINFO LICENSE
+git -C "$aur" -c user.name="$AUR_GIT_NAME" -c user.email="$AUR_GIT_EMAIL" commit -qm "Update to $version-$pkgrel"
 git -C "$aur" push -q origin HEAD:master
 echo "Published promethee $version-$pkgrel to the AUR"
