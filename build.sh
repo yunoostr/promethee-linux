@@ -57,10 +57,12 @@ detect_arch() {
   esac
 }
 
-# Fresh work and output dirs; everything below runs inside WORK.
+# Fresh work and output dirs; everything below runs inside WORK. The app is assembled in
+# OUT, next to FINAL: rebuilding the installed version must not delete it before it succeeds.
 prepare_dirs() {
   WORK=$ROOT/build/$VERSION
-  OUT=$ROOT/dist/promethee-$VERSION-linux-$ARCH
+  FINAL=$ROOT/dist/promethee-$VERSION-linux-$ARCH
+  OUT=$FINAL.part
   rm -rf "$WORK" "$OUT"
   mkdir -p "$WORK" "$OUT"
   cd "$WORK"
@@ -148,9 +150,12 @@ EOF
   echo "$VERSION" > "$OUT/VERSION"
 }
 
-# Points dist/current at this build (what ./promethee launches) and drops the downloads.
+# Moves the finished build in place, points dist/current at it (what ./promethee launches)
+# and drops the downloads.
 activate() {
-  ln -sfn "$(basename "$OUT")" "$ROOT/dist/current"
+  rm -rf "$FINAL"
+  mv "$OUT" "$FINAL"
+  ln -sfn "$(basename "$FINAL")" "$ROOT/dist/current"
   rm -rf "$WORK"
 }
 
