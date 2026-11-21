@@ -1,0 +1,51 @@
+# Builds Promethee on your machine from its official macOS release: the AUR hosts no Promethee code.
+pkgname=promethee
+pkgver=1.4.2
+pkgrel=1
+_commit=870a580   # the promethee-linux commit to build; publish.sh sets it
+pkgdesc='Promethee for Linux, built locally from the official release'
+arch=(x86_64 aarch64)
+url='https://github.com/yunoostr/promethee-linux'
+license=(MIT LicenseRef-Promethee)
+depends=(gtk3 nss alsa-lib libsecret)
+makedepends=(git curl unzip nodejs npm python make gcc)
+optdepends=('gnome-keyring: stay signed in outside GNOME and KDE'
+            'xorg-xprop: window tracking on X11'
+            'xorg-xwininfo: window tracking on X11')
+options=(!strip !debug)
+source=("promethee-linux::git+$url.git#commit=$_commit")
+sha256sums=(SKIP)
+
+build() {
+  cd promethee-linux
+  ./build.sh "$pkgver"
+}
+
+package() {
+  cd promethee-linux
+  local lib=/usr/lib/promethee size
+  install -d "$pkgdir$lib/dist/current"
+  cp -a dist/current/. "$pkgdir$lib/dist/current/"
+  chmod 4755 "$pkgdir$lib/dist/current/chrome-sandbox"
+  install -Dm755 promethee "$pkgdir$lib/promethee"
+  install -d "$pkgdir/usr/bin"
+  ln -s "$lib/promethee" "$pkgdir/usr/bin/promethee"
+
+  install -Dm644 /dev/stdin "$pkgdir/usr/share/applications/promethee.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Promethee
+Exec=promethee %U
+Icon=promethee
+Categories=Office;
+StartupWMClass=promethee
+MimeType=x-scheme-handler/promethee;
+DESKTOP
+  for size in 16 32 128 256 512; do
+    install -Dm644 "dist/current/resources/assets/icon.iconset/icon_${size}x${size}.png" \
+      "$pkgdir/usr/share/icons/hicolor/${size}x${size}/apps/promethee.png"
+  done
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  echo "Promethee is proprietary software owned by its authors: $url#legal" |
+    install -Dm644 /dev/stdin "$pkgdir/usr/share/licenses/$pkgname/LICENSE-Promethee"
+}

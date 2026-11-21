@@ -102,7 +102,9 @@ uninstall_desktop() {
 
 main() {
   if [ "${1:-}" = --uninstall-desktop ]; then uninstall_desktop; return; fi
-  if [ ! -e "$CURRENT" ]; then
+  if [ ! -e "$ROOT/build.sh" ]; then
+    :   # installed by a package (AUR): the package manager builds and updates it
+  elif [ ! -e "$CURRENT" ]; then
     # Same lock as update(): a second launch waits for the first build instead of starting another.
     mkdir -p "$ROOT/build"
     exec 9>"$ROOT/build/.update.lock"

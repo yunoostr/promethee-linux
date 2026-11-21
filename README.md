@@ -156,7 +156,7 @@ with your distro, desktop (X11 or Wayland) and what worked. Ideas welcome on the
 
 - [x] A `.desktop` entry, added by `./promethee`
 - [ ] AppImage
-- [ ] AUR package
+- [x] AUR package (`packaging/aur/`)
 - [ ] Wayland window detection
 - [x] A daily check that builds and tests every new Promethee release on x64 and arm64 (nothing is published)
 
