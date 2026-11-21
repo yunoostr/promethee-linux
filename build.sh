@@ -70,6 +70,14 @@ patch_natives() {
   rm -rf "$sqlite/build/Release/obj" "$sqlite/build/Release/obj.target" "$sqlite/build/Release/.deps"
 }
 
+# Lets active-win see native Wayland windows (Hyprland, sway): its own Linux code only asks X11.
+patch_window_detection() {
+  local lib=app/node_modules/active-win/lib
+  [ -f "$lib/linux.js" ] || { log "active-win not found, window detection left as is"; return; }
+  mv "$lib/linux.js" "$lib/x11.js"
+  cp "$ROOT/patches/active-win-linux.js" "$lib/linux.js"
+}
+
 # Downloads the official Linux Electron of the same version into OUT.
 fetch_electron() {
   log "Downloading Electron $ELECTRON"
@@ -85,7 +93,7 @@ assemble() {
   mv app "$OUT/resources/app"
   mv "$RES/assets" "$OUT/resources/assets"
 
-  # active-win (X11 window detection) is only used as a fallback behind this flag on non-mac/win.
+  # active-win (window detection) is only used as a fallback behind this flag on non-mac/win.
   cat > "$OUT/promethee" <<'EOF'
 #!/usr/bin/env bash
 export PROMETHEE_ENABLE_PERMISSION_TRACKING=1
@@ -107,6 +115,7 @@ main() {
   prepare_dirs
   fetch_mac_app
   patch_natives
+  patch_window_detection
   fetch_electron
   assemble
   activate

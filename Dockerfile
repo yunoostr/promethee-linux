@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY build.sh promethee ./
+COPY patches ./patches
 ARG VERSION=
 RUN ./build.sh $VERSION
 # Smoke test: the app must still run after 20s (--no-sandbox: container runs as root),

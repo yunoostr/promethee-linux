@@ -131,7 +131,7 @@ Nothing from Promethee lives in this repo: everything is downloaded from Prometh
 | Guild chat rooms (realtime) | ✅ |
 | Starting a focus session | ❔ not tested yet |
 | Local database (SQLite, encrypted) | ✅ recompiled for Linux |
-| Active window tracking & app blocker | ⚠️ X11 only (via `xprop`), not Wayland yet |
+| Active window tracking | ✅ X11 (`xprop` + `xwininfo`), Hyprland, sway · ⚠️ not GNOME/KDE on Wayland yet |
 | macOS vibrancy, Windows virtual desktops | ➖ not applicable |
 | Auto-update | ✅ handled by `./promethee`, applied on next launch |
 
@@ -153,7 +153,7 @@ with your distro, desktop (X11 or Wayland) and what worked. Ideas welcome on the
 
 - [ ] AppImage and a `.desktop` entry
 - [ ] AUR package
-- [ ] Wayland window detection
+- [x] Wayland window detection on Hyprland and sway (GNOME/KDE still open)
 - [x] A daily check that builds and tests every new Promethee release on x64 and arm64 (nothing is published)
 
 ## ⚖️ Legal
