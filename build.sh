@@ -142,6 +142,11 @@ patch_window_detection() {
   cp "$ROOT/patches/active-win-linux.js" "$lib/linux.js"
 }
 
+# Gives the Linux tray a menu up front: panels can't ask the app to pop one up.
+patch_tray_menu() {
+  node "$ROOT/patches/tray-menu-linux.js" app
+}
+
 # Downloads the official Linux Electron of the same version into OUT.
 fetch_electron() {
   log "Downloading Electron $ELECTRON"
@@ -191,6 +196,7 @@ main() {
   fetch_mac_app
   patch_natives
   patch_window_detection
+  patch_tray_menu
   fetch_electron
   assemble
   activate
