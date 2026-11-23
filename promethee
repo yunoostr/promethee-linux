@@ -135,7 +135,13 @@ main() {
   # KDE already gets KWallet; everyone else is pointed at the Secret Service (GNOME Keyring, KeePassXC...).
   local keyring=()
   [[ ${XDG_CURRENT_DESKTOP:-} == *KDE* || " $* " == *" --password-store="* ]] || keyring=(--password-store=gnome-libsecret)
-  exec "$CURRENT/promethee" "${keyring[@]}" "$@"
+
+  # Promethee places its timer pill and panels itself: on the screen under the cursor, moved with
+  # setBounds, kept on top. Native Wayland allows none of that, so they stay stuck where they first
+  # opened. XWayland does, so use it when the session has it (--ozone-platform=wayland opts out).
+  local platform=()
+  [[ -z ${WAYLAND_DISPLAY:-} || -z ${DISPLAY:-} || " $* " == *" --ozone-platform"* ]] || platform=(--ozone-platform=x11)
+  exec "$CURRENT/promethee" "${platform[@]}" "${keyring[@]}" "$@"
 }
 
 main "$@"

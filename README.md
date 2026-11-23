@@ -137,6 +137,7 @@ Nothing from Promethee lives in this repo: everything is downloaded from Prometh
 | Guild chat rooms (realtime) | ✅ |
 | Starting a focus session | ❔ not tested yet |
 | Local database (SQLite, encrypted) | ✅ recompiled for Linux |
+| Timer pill and panels on the screen you're on, draggable | ✅ on Wayland too: `./promethee` runs Promethee through XWayland, which lets it place its windows (`--ozone-platform=wayland` to opt out) |
 | Active window tracking | ✅ X11 (`xprop` + `xwininfo`), Hyprland, sway · ⚠️ not GNOME/KDE on Wayland yet |
 | macOS vibrancy, Windows virtual desktops | ➖ not applicable |
 | Auto-update | ✅ handled by `./promethee`, applied on next launch |
