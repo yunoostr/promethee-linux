@@ -147,6 +147,13 @@ patch_tray_menu() {
   node "$ROOT/patches/tray-menu-linux.js" app
 }
 
+patch_popup_clicks() {
+  local main
+  main=app/$(node -p 'require("./app/package.json").main')
+  cp "$ROOT/patches/popup-clicks-linux.js" "$(dirname "$main")/"
+  echo 'require("./popup-clicks-linux.js");' >> "$main"
+}
+
 # Downloads the official Linux Electron of the same version into OUT.
 fetch_electron() {
   log "Downloading Electron $ELECTRON"
@@ -197,6 +204,7 @@ main() {
   patch_natives
   patch_window_detection
   patch_tray_menu
+  patch_popup_clicks
   fetch_electron
   assemble
   activate
